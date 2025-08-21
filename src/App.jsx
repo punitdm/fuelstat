@@ -54,28 +54,39 @@ export default function App() {
   };
 
   // Import data from JSON file
-  const handleImport = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+const handleImport = (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const imported = JSON.parse(e.target.result);
-        if (Array.isArray(imported)) {
-          if (window.confirm("Merge with existing data? Click Cancel to replace.")) {
-            setEntries([...entries, ...imported]);
+        let imported = JSON.parse(e.target.result);
+
+        // Support either direct array OR { entries: [...] }
+        if (!Array.isArray(imported)) {
+          if (Array.isArray(imported.entries)) {
+            imported = imported.entries;
           } else {
-            setEntries(imported);
+            alert("Invalid file format. Expected an array of entries.");
+            return;
           }
-        } else {
-          alert("Invalid file format");
         }
-      } catch {
+
+        setEntries((prev) =>
+          window.confirm("Merge with existing data? Click Cancel to replace.")
+            ? [...prev, ...imported]
+            : imported
+        );
+      } catch (err) {
+        console.error("Import error:", err);
         alert("Error reading file");
       }
     };
     reader.readAsText(file);
+
+    // reset so you can re-import the same file without refreshing
+    event.target.value = "";
   };
 
   // Clear all data
